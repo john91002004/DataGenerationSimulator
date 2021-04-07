@@ -1,0 +1,84 @@
+Title: 
+	General Data Generation Simulation
+
+
+UI Design: 
+	***
+	Mode: 
+		V Data Generate
+		  Data Check 
+	***
+	Folder Structures: 
+		folder structure 1:	(Title can be changed)
+		(Addable)folder structure 2: 
+		(Addable)folder structure 3: 
+		(Addable)folder structure 4: 
+		...
+		-1-
+		folder structure 1:
+			root dir(level 0): ___(string)___ Ex: S:/Archived/
+			(Addable)level 1 subdir: ___(string)___ or ___(number)___ or ___(datetime)___ Ex: (string) Image, Alpha numeric text, Other
+			(Addable)level 2 subdir: ___(string)___ or ___(number)___ or ___(datetime)___ 
+			(Addable)level 3 subdir: ___(string)___ or ___(number)___ or ___(datetime)___ 
+			...
+		---
+			format ___(string)___: Use ',' as delimiter to seperate each string as subdir name. (N strings can be added with delimiter ',' between them)
+			format ___(number)___: choose how many digits, and from what number to what number, and the interval (4 options to fill) 
+			format ___(datetime)___: type in the datetime format (1 string to fill)
+				Ex:	YYYY-MM-DD hh:mm:ss -> 2021-03-24 14:12:08
+					YY -> 21	hhm7 -> 1417 
+					MMDDmm -> Illegal 	YYDD -> Illegal 	hhss -> Illegal	(cannot skip in-between)
+				*Note that ___(datetime)___ in pattern and level field cannot be combination like YYYYMMDDhhm636. Instead, it should be pure format like hhmmss.
+				*Only in generating datetime format field, it can be free from the limitation mentioned above. So, hhm736 is legal in that field.
+				*___(number)___ format should be saved as string type like folder_struct_example.ini shows. 
+			-2- 
+			filename structure: 
+				pattern 1: ___(string)___ or ___(number)___ or ___(datetime)___ or ___(sequence)___     		delimiter 1: ___(1 string)___
+				(Addable) pattern 2: ___(string)___ or ___(number)___ or ___(datetime)___ or ___(sequence)___	delimiter 2: ___(1 string)___
+				(Addable) pattern 3: ___(string)___ or ___(number)___ or ___(datetime)___ or ___(sequence)___	delimiter 3: ___(1 string)___
+				(Addable) pattern 4: ___(string)___ or ___(number)___ or ___(datetime)___ or ___(sequence)___	delimiter 4: ___(1 string)___
+				...
+				(Addable) delimiter 1: ___(string)___
+				(Addable) delimiter 2: ___(string)___
+				(Addable) delimiter 3: ___(string)___	Note that delimiter string should be one character only such as "_". 
+				...
+				size: ___(1 integer)___
+				generating period: ___(period)___
+				generating datetime format: ___(datetime)___ Ex: YYYYMMDDhhm606 (Note: this must match with generating period, can be divided completely. And it should be numbers following letters.)
+			---
+				format (period): how many hour, how many minute, how many second(3 options to fill) 
+					Ex: 1 hour 20 min 20 sec -> 4820 seconds (minimum unit is sec)
+			--- 
+				additional format ___(sequence)___: duration = 1 day, and how many digits and start number, and interval(3 options to fill)
+					Ex: period = 10 min(generating period), duration = 1 day, how many digits = 3, start from = 00:06, start number = 0, interval = 2 
+						-> 000, 002, 004, 006,...,286 (number amount: 24*60/10=144)
+						 00:06 00:16 00:26 ...   23:56
+					*Note that ___(sequence)___ format will not partake in combination of each pattern while it will be combined in the filename according to generating period and related parameters.
+					*Note that ___(sequence)___ format should be accord to generating datetime. 
+					*Note that ___(sequence)___ format only fits for generating period smaller than one day. 
+			--- 
+					Ex: 
+						pat1: (string) WV069,VI005 delim1: _
+						pat2: (sequence)  		delim1: _
+						pat3: (datetime) YYYYMMDDhhm606 delim1: _
+						pat4: (number) 01~23 	delim1: _
+						pat5: (string) .uhrit 	delim1: 
+						-> WV069_001_20210324001606_20.uhrit
+	***
+	Format Check and Add
+		1. Calculate how many files will be generated in one interval, and the interval 
+		2. See if the filename structure of each folder structure conflicts in ___(datetime)___ part. 
+		3. Store them into a ini file with good dictionary structure.
+		4. See if there is illegal filename structure in folder_struct.(Not exist)
+		
+	***
+	Data Generation Setting: 
+		start from: (default: now)
+		end at:	(default: never) 
+		1. Using the filename structure of every folder structure as filename to generate. 
+		2. If many files must be generated at one time, make them at the same time.  
+		
+		
+		
+		
+		
