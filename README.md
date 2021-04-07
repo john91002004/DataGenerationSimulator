@@ -9,4 +9,4 @@ Generate incoming files to simulate the environment of satellite data receiving 
 ## Setting of ini files: 
 1. Please see Design.txt and example ini files. 
 ## Future works: 
-1. Make an UI for configuring setting files.
+1. Make an UI for configuring setting files.(in c# maybe)
