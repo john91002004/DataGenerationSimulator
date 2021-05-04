@@ -15,7 +15,7 @@ Generate incoming files to simulate the environment of satellite data receiving 
 
 
 ## Version 
-v1.00: established by John Huang, 2021-04-06
+v1.00: established by John Huang, 2021-04-06  
 v2.00: data check function is on, John Huang, 2021-05-04
 
 
