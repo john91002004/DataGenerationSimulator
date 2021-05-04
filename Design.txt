@@ -29,8 +29,12 @@ UI Design:
 					YY -> 21	hhm7 -> 1417 
 					MMDDmm -> Illegal 	YYDD -> Illegal 	hhss -> Illegal	(cannot skip in-between)
 				*Note that ___(datetime)___ in pattern and level field cannot be combination like YYYYMMDDhhm636. Instead, it should be pure format like hhmmss.
+				*Note that ___(datetime)___ only contains at most 14 letters.
 				*Only in generating datetime format field, it can be free from the limitation mentioned above. So, hhm736 is legal in that field.
 				*___(number)___ format should be saved as string type like folder_struct_example.ini shows. 
+				*Note that root dir(level 0) only contains 1 string instead of multiple strings.
+				*Note that although there can be multiple filename structures in a single folder structure, those filename structures must have same generating period and generating datetime format. (If not, some issues occur.)
+				*Note that every level containing "\" must be written "/". If not so, character will be wrongly explained in some cases. 
 			-2- 
 			filename structure: 
 				pattern 1: ___(string)___ or ___(number)___ or ___(datetime)___ or ___(sequence)___     		delimiter 1: ___(1 string)___
@@ -45,9 +49,23 @@ UI Design:
 				size: ___(1 integer)___
 				generating period: ___(period)___
 				generating datetime format: ___(datetime)___ Ex: YYYYMMDDhhm606 (Note: this must match with generating period, can be divided completely. And it should be numbers following letters.)
+				check delta T1: ___(period)___ 
+				check delta T2: ___(period)___ 
 			---
-				format (period): how many hour, how many minute, how many second(3 options to fill) 
+				format ___(period)___: how many hour, how many minute, how many second(3 options to fill) 
 					Ex: 1 hour 20 min 20 sec -> 4820 seconds (minimum unit is sec)
+				*Note that check delta T2 - check delta T1 should be less or equal to generating period. 
+				*---0010------------0020------------0030------------0040-----------~
+				*...........^...........<...^...........<...^...........<...^......~
+				* ^ means start checking point, < end point
+				*...<--T1-->........<--T1-->........<--T1-->........<--T1-->.......~
+				*...<---------T2-------->...~
+				*...........<---T2-T1--->...~
+				*T1,T2 cannot be negative number and T2 > T1.
+				*Note that generating period format should be only one format. ([YYYYMMDDhhm606,YYYYMMDDhhm636] is not allowed.)
+				*Note that generating period format should match with generating period, namely can be divided utterly. YYYYMMDDhhmm606 implies that generating period is 10 min. 
+				*Note that if I want generating period to be 15 min: you should create four file structures with same other attributes but generating period format would be YYYYMMDDhh1606,YYYYMMDDhh0106,YYYYMMDDhh3106,YYYYMMDDhh4606 respectively, and generating period 1 hour.
+				*Note that pattern/delimiter amount will be N+1/N. Amount of patterns will be 1 more than that of delimiters. 
 			--- 
 				additional format ___(sequence)___: duration = 1 day, and how many digits and start number, and interval(3 options to fill)
 					Ex: period = 10 min(generating period), duration = 1 day, how many digits = 3, start from = 00:06, start number = 0, interval = 2 
@@ -78,7 +96,19 @@ UI Design:
 		1. Using the filename structure of every folder structure as filename to generate. 
 		2. If many files must be generated at one time, make them at the same time.  
 		
-		
+----------
+
+	***
+	Mode: 
+		  Data Generate
+		V Data Check 
+	***
+	1. (Collect Info) Acquire info of data receiving status. 
+		a. Target collection: set filename format like above and only collect the info of files in that format. (usually used in the case that filename has fixed format, like satellite data)
+		b. Carpet collection: collect all info of files. (usually used in the case that filename has no fixed format, like radar data)
+	2. (Analyze Info) Analyze the info 
+	3. (Standard Output) Store them into a structured object (namely, dictionary type)
+	4. (Other-Formed Outputs) Convert objects into other forms you need
 		
 		
 		
