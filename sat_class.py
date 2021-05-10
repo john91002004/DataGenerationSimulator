@@ -11,6 +11,7 @@ from datetime import datetime as dt
 from datetime import timezone as tz
 from datetime import timedelta as delta 
 import time 
+import re 
 
 # Classes 
 '''
@@ -30,6 +31,7 @@ class Full_Dict:
         self.__ini_folder = ini_folder
         self.__Read_file_struct() 
         self.__Read_folder_struct()
+        self.__Read_manam_struct()
         self.__logdir = ini_folder + '/object_log/'
         if not os.path.isdir(self.__logdir) :
             os.makedirs(self.__logdir) 
@@ -160,17 +162,22 @@ class Full_Dict:
         clist = []
         if d['type'] == '(string)':
             clist = d['content']
-        elif d['type'] == '(sequence)':     # this sequence is especially for H8 data
-            tmp_str = self.__Add_zeroprefix(6, gen_dt_format.strip('YMDhms')) 
-            tmp_hour = int(tmp_str[0:2])
-            tmp_min = int(tmp_str[2:4])
-            tmp_sec = int(tmp_str[4:6]) 
-            tmp_delta1 = delta(minutes=tmp_min, seconds=tmp_sec) 
-            tmp_delta_dt = delta(hours=dt.hour, minutes=dt.minute, seconds=dt.second) 
-            tmp_delta_11 = tmp_delta_dt - tmp_delta1 
-            tmp_delta2 = delta(hours=gen_period[0],minutes=gen_period[1], seconds=gen_period[2]) 
-            tmp_seq =  int(tmp_delta_11/tmp_delta2)  + int(d['content'][1])
-            clist.append(self.__Add_zeroprefix(d['content'][0], tmp_seq)) 
+        elif d['type'] == '(sequence)':     # this sequence is especially for GK2A data
+            tmp_manam = d['content'][0]
+            tmp_product = d['content'][1]
+            tmp_dir = self.__manam_struct[tmp_manam]['level 0']['content'][0]
+            tmp_latest_manam_file = g.glob(tmp_dir + '/*.txt')
+            tmp_latest_manam_file.sort(key=os.path.getmtime) 
+            tmp_latest_manam_file = tmp_latest_manam_file[-1] 
+            tmp_dict = self.__Manam2Dict(tmp_latest_manam_file, tmp_manam)
+            tmp_hhmmss = dt.strftime('%H%M%S') 
+            tmp_dict2 = tmp_dict['manam'][tmp_product]
+            result = None 
+            for tmp_key, tmp_value in tmp_dict2.items(): 
+                if tmp_value['start_tm'] == tmp_hhmmss: 
+                    result = tmp_key 
+                    break 
+            clist.append(result)
         elif d['type'] == '(datetime)':
             clist.append(dt.strftime(self.__Normalize_datetimeformat(d['content'][0])))
         elif d['type'] == '(number)':
@@ -311,6 +318,14 @@ class Full_Dict:
         "Read in folder structure setting ini file."
         self.__folder_struct = self.__Read_ini(self.__ini_folder + '/folder_struct.ini')
         return 
+    
+    def __Read_manam_struct(self): 
+        "Read in manam schedule setting ini file.(not necessary)"
+        if os.path.isfile(self.__ini_folder + 'manam_setting.ini') == False : 
+            print('(info) There is no manam ini file found.')
+        else : 
+            self.__manam_struct = self.__Read_ini(self.__ini_folder + '/manam_setting.ini') 
+        return 
         
     # Sleep sec by sec
     def __sleep(self,seconds): 
@@ -339,7 +354,7 @@ class Full_Dict:
                     tmp_s = s[1].split(',')
                     tmp_type = tmp_s[0]
                     tmp_d[tmp_title][tmp_attr] = {'type': tmp_type, 'content':[]}
-                    if tmp_type == '(string)' or tmp_type == '(datetime)' or tmp_type == '(filename structure)': 
+                    if tmp_type == '(string)' or tmp_type == '(datetime)' or tmp_type == '(filename structure)' or tmp_type == '(sequence)': 
                         for i in range(1,len(tmp_s)):
                             tmp_d[tmp_title][tmp_attr]['content'].append(tmp_s[i]) 
                     else : 
@@ -353,13 +368,13 @@ class Full_Dict:
     # for debug 
     def SHOW(self): 
         "This function will return self.__file_struct and self.__folder_struct, which is for debug use."
-        return self.__file_struct, self.__folder_struct 
+        return self.__manam_struct, self.__file_struct, self.__folder_struct 
 
 #---
 #   Following is for data check. 
 #     there are 3 methods: 
 #       - Keep-Checking 
-#       - Check-Once each time 
+#       V Check-Once each time 
 #       - inotify
 #---
     def Periodical_Check(self): 
@@ -663,36 +678,85 @@ class Full_Dict:
             os.rename(file, file + '.old')
         return 
 
+### Analyze manam schedule ###
+    # Read manam schedule and Output a dictionary 
+    def __Manam2Dict(self, manam_file, manam_type="GK2A") : 
+        "Analyze manam schedule and return a dictionary."
+        if manam_type == 'GK2A':
+            d = {'manam': {} , 'Update': {}, 'calibration': {} } 
+            s_tmp_flag = False 
+            c_tmp_flag = False 
+            # Meta descriptions (1st paragraph)
+            with open (file=manam_file, mode='r', encoding='utf-8') as fr: 
+                s = fr.readline()
+                while (s != '') :
+                    s = s.strip()   # remove tail and head empty 
+                    # set case 1
+                    if s.startswith('TIME(UTC)') : 
+                        s_tmp_flag = True   
+                        s = fr.readline()
+                        continue 
+                    # end case 1 and case 2 
+                    elif s == '' : 
+                        s_tmp_flag = False
+                        c_tmp_flag = False 
+                    # set case 2 
+                    elif s.startswith('GAIN'): 
+                        c_tmp_flag = True 
+                        s = fr.readline()
+                        continue 
+                    
+                    # case 0 : update datetime 
+                    if s.startswith('UPDATE') :
+                        d['Update'] = tmp = s.split(' ')[1]
+                    # case 1 : extract all manam info out 
+                    # Ex: d[manam] = {RR: {001:{start:000306, end: 000319, dissemination: True} } ...}
+                    elif s_tmp_flag == True : 
+                        tmp = s.split('\t')  
+                        tmp = self.__Remove_empty_element(tmp)
+                        tmp1 = tmp[0].split('-')
+                        start_tm = tmp1[0]
+                        end_tm = tmp1[1]
+                        tmp2 = self.__Str_seperate(tmp[1])
+                        product_name = tmp2[0]
+                        sequence = tmp2[1]
+                        dissemination = tmp[-1]
+                        if d['manam'].get(product_name) == None : 
+                            d['manam'][product_name] = {} 
+                        if d['manam'][product_name].get(sequence) == None: 
+                            d['manam'][product_name][sequence] = {} 
+                        d['manam'][product_name][sequence] = {'start_tm': start_tm, 'end_tm': end_tm, 'dissemination': dissemination}
+                    # case 2 : extract all calibration info out 
+                    # Ex: d[calibration] = {channel: {1,2,3,4,5,6,...} }
+                    elif c_tmp_flag == True : 
+                        tmp = s.split('\t')
+                        d['calibration'][tmp[0]] = tmp[1:]
+                    s = fr.readline()
+        elif manam_type == 'Himawari-8' : 
+            pass 
+        elif manam_type == 'FY2F' or manam_type == 'FY2G' or manam_type == 'FY2H': 
+            pass
+        return d 
+        
+    # Remove excessive empty or space 
+    def __Remove_empty_element(self, l): 
+        "Remove empty elements '' and ' ' from target list. "
+        while '' in l: 
+            l.remove('')
+        while ' ' in l:
+            l.remove(' ')
+        return l 
+        
+    # Seperate digit alphabet
+    def __Str_seperate(self, s, pattern_str='([a-zA-Z]+)([0-9]+)'): 
+        "Seperate s with specific pattern. Ex: pattern_str = '([a-zA-Z]+)([0-9]+)' and s = 'jiqo903', return ['jiqo', '903'] list."
+        m = re.compile(pattern_str)
+        return list(m.match(s).groups()) 
         
         
         
         
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-
-
-
-
-
 
 
 
