@@ -172,7 +172,7 @@ class Full_Dict:
             tmp_dict = self.__Manam2Dict(tmp_latest_manam_file, tmp_manam)
             tmp_hhmmss = dt.strftime('%H%M%S') 
             tmp_dict2 = tmp_dict['manam'][tmp_product]
-            result = None 
+            result = 'XXX'
             for tmp_key, tmp_value in tmp_dict2.items(): 
                 if tmp_value['start_tm'] == tmp_hhmmss: 
                     result = tmp_key 
