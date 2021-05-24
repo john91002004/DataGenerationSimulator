@@ -67,13 +67,8 @@ UI Design:
 				*Note that if I want generating period to be 15 min: you should create four file structures with same other attributes but generating period format would be YYYYMMDDhh1606,YYYYMMDDhh0106,YYYYMMDDhh3106,YYYYMMDDhh4606 respectively, and generating period 1 hour.
 				*Note that pattern/delimiter amount will be N+1/N. Amount of patterns will be 1 more than that of delimiters. 
 			--- 
-				additional format ___(sequence)___: duration = 1 day, and how many digits and start number, and interval(3 options to fill)
-					Ex: period = 10 min(generating period), duration = 1 day, how many digits = 3, start from = 00:06, start number = 0, interval = 2 
-						-> 000, 002, 004, 006,...,286 (number amount: 24*60/10=144)
-						 00:06 00:16 00:26 ...   23:56
-					*Note that ___(sequence)___ format will not partake in combination of each pattern while it will be combined in the filename according to generating period and related parameters.
-					*Note that ___(sequence)___ format should be accord to generating datetime. 
-					*Note that ___(sequence)___ format only fits for generating period smaller than one day. 
+				additional format ___(sequence)___: this must accord to the manam schedule, having 2 parameters: satellite name, product name. Ex: GK2A(find corresponding sat setting in manam_setting.ini), FD 
+					*Note that format ___(sequence)___ is really weird, good-for-nothing thing invented by Korean. Only used in GK2A sat case by now. 
 			--- 
 					Ex: 
 						pat1: (string) WV069,VI005 delim1: _
@@ -82,6 +77,10 @@ UI Design:
 						pat4: (number) 01~23 	delim1: _
 						pat5: (string) .uhrit 	delim1: 
 						-> WV069_001_20210324001606_20.uhrit
+			-3- 
+			manam structure: 
+			level 0: ___(string)___
+			*Note manam structure ini setting only contain one string(which is level 0) for each. 
 	***
 	Format Check and Add
 		1. Calculate how many files will be generated in one interval, and the interval 
